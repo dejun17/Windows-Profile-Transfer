@@ -23,7 +23,22 @@ $FoldersToCopy = @(
     'AppData\Local\Google\Chrome\User Data\Default'
 )
 
-# Ask the user if they want to perform a local transfer
+# Check for disk errors
+$DriveLetter = $null
+while (-not (Test-Path "$DriveLetter:\")) {
+    $DriveLetter = Read-Host -Prompt "Enter the drive letter to check for disk errors (e.g., C):"
+}
+
+Write-Host "Checking for disk errors on drive $DriveLetter..."
+$DiskErrors = Test-Volume -DriveLetter $DriveLetter
+
+if ($DiskErrors) {
+    Write-Warning "Disk errors were found on drive $DriveLetter. Please resolve the errors before proceeding."
+    exit
+} else {
+    Write-Host "No disk errors found. Continuing with the profile transfer."
+}
+
 $TransferType = Read-Host -Prompt "Choose transfer type (Local/Remote):"
 $TransferToDifferentDrive = $false
 
@@ -82,6 +97,13 @@ if ($TransferToDifferentDrive -eq $true) {
 
         robocopy.exe $Source $Destination /E /IS /NP /NFL
     }
+}
+
+# Check if the destination drive is an HDD and optimize it
+$DriveInfo = Get-WmiObject -Class Win32_DiskDrive | Where-Object { $_.Name -eq "PhysicalDisk0" }
+if ($DriveInfo.MediaType -eq "Fixed hard disk media") {
+    Write-Host "Optimizing the destination drive..."
+    Optimize-Volume -DriveLetter $DriveLetter
 }
 
 # Message to inform about updating registry and environment variables
