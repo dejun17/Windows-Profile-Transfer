@@ -25,7 +25,7 @@ $FoldersToCopy = @(
 
 # Check for disk errors
 $DriveLetter = $null
-while (-not (Test-Path "$DriveLetter:\")) {
+while (-not (Test-Path "$DriveLetter:\") -or $DriveLetter -eq $null) {
     $DriveLetter = Read-Host -Prompt "Enter the drive letter to check for disk errors (e.g., C):"
 }
 
@@ -44,7 +44,10 @@ $TransferToDifferentDrive = $false
 
 if ($TransferType -eq "Local") {
     # For local transfer, ask for a different drive letter
-    $DriveLetter = Read-Host -Prompt "Enter the drive letter for local transfer (e.g., D):"
+    $DriveLetter = $null
+    while (-not (Test-Path "$DriveLetter:\") -or $DriveLetter -eq $null) {
+        $DriveLetter = Read-Host -Prompt "Enter the drive letter for local transfer (e.g., D):"
+    }
     $DestinationRoot = "$DriveLetter:\Users\$User"
     $TransferToDifferentDrive = $true
 
@@ -100,7 +103,7 @@ if ($TransferToDifferentDrive -eq $true) {
 }
 
 # Check if the destination drive is an HDD and optimize it
-$DriveInfo = Get-WmiObject -Class Win32_DiskDrive | Where-Object { $_.Name -eq "PhysicalDisk0" }
+$DriveInfo = Get-WmiObject -Class Win32_DiskDrive | Where-Object { $_.DeviceID -eq "PHYSICALDRIVE0" }
 if ($DriveInfo.MediaType -eq "Fixed hard disk media") {
     Write-Host "Optimizing the destination drive..."
     Optimize-Volume -DriveLetter $DriveLetter
